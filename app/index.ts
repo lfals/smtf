@@ -1,13 +1,11 @@
 // app/index.js
 const path = require('path');
-const { app, BrowserWindow, Tray, Menu, nativeImage } = require('electron');
-
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain } = require('electron');
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
-const isDev = process.env.IS_DEV === 'true';
 
 function createWindow() {
   // Create the browser window.
@@ -28,12 +26,12 @@ function createWindow() {
   });
 
   // Open the DevTools.
-  if (isDev) {
-    mainWindow.loadURL('http://localhost:3000');
-  } else {
+
     // mainWindow.removeMenu();
     mainWindow.loadFile(path.join(__dirname, 'build', 'index.html'));
-  }
+
+
+  mainWindow.setAlwaysOnTop(true, 'screen');
 
   return mainWindow
 }
@@ -45,38 +43,28 @@ function createWindow() {
 let tray
 
 app.whenReady().then(() => {
-  createWindow();
+const mainWindow =  createWindow();
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
-  const icon = nativeImage.createFromPath('./src/assets/logo.svg')
-  tray = new Tray(icon)
-
+  const iconPath = path.join(__dirname,'./clock-solid.png')
+  const iconPath2 = path.join(__dirname,'./clock-solid@2.png')
+  tray = new Tray(nativeImage.createFromPath(iconPath))
   const contextMenu = Menu.buildFromTemplate([
-    { label: 'Item1', type: 'radio' },
-    { label: 'Item2', type: 'radio' },
-    { label: 'Item3', type: 'radio', checked: true },
-    { label: 'Item4', type: 'radio' }
+    { label: 'Please Stand?', icon: nativeImage.createFromPath(iconPath2) },
+    { label: 'Separator',       type: 'separator'},
+    { label: 'Open', click: () => mainWindow.show() },
+    { label: 'Minimize', click: () => mainWindow.hide() },
+    { label: 'Exit', click: () => app.exit(0) }
   ])
-  
+  tray.setToolTip('This is my application.')
   tray.setContextMenu(contextMenu)
-
-    tray.setTitle('This is my title')
-
-    tray.on('double-click', function(e){
-        const window = createWindow()
-        window.show()
-      });
+  
 
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
